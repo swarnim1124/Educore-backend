@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Fall Detection System</title>
+    <!-- TensorFlow.js and the MoveNet model for pose detection -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+    <style>
+        :root {
+            /* Light mode colors */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-card: #ffffff;
+            --text-primary: #1a1a1a;
+            --text-secondary: #6c757d;
+            --accent: #000000;
+            --accent-hover: #333333;
+            --border: #e9ecef;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --shadow-hover: rgba(0, 0, 0, 0.2);
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+        }
+
+        [data-theme="dark"] {
+            /* Dark mode colors */
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --bg-card: #2d2d2d;
+            --text-primary: #ffffff;
+            --text-secondary: #adb5bd;
+            --accent: #ffffff;
+            --accent-hover: #e9ecef;
+            --border: #495057;
+            --shadow: rgba(0, 0, 0, 0.3);
+            --shadow-hover: rgba(0, 0, 0, 0.5);
+            --success: #20c997;
+            --warning: #ffd43b;
+            --danger: #fd7e14;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            transition: all 0.3s ease;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 40px var(--shadow);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 10px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .theme-toggle:hover {
+            background: var(--accent);
+            color: var(--bg-primary);
+            transform: translateY(-1px);
+        }
+
+        /* Video Container */
+        .video-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000000;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 30px;
+            border: 2px solid var(--border);
+            box-shadow: 0 8px 25px var(--shadow);
+        }
+
+        #webcam {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+        }
+
+        .loading-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 3;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Status Display */
+        .status-container {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .status-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Alarm States */
+        .status-monitoring {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .status-alarm {
+            background: var(--danger);
+            color: white;
+            border-color: var(--danger);
+            animation: pulse-alarm 1s infinite;
+        }
+
+        @keyframes pulse-alarm {
+            0%, 100% { 
+                box-shadow: 0 0 0 0 var(--danger);
+                transform: scale(1);
+            }
+            50% { 
+                box-shadow: 0 0 0 10px rgba(220, 53, 69, 0.2);
+                transform: scale(1.02);
+            }
+        }
+
+        [data-theme="dark"] .status-alarm {
+            background: #fd7e14;
+            border-color: #fd7e14;
+        }
+
+        [data-theme="dark"] @keyframes  pulse-alarm {
+            0%, 100% { 
+                box-shadow: 0 0 0 0 #fd7e14;
+                transform: scale(1);
+            }
+            50% { 
+                box-shadow: 0 0 0 10px rgba(253, 126, 20, 0.2);
+                transform: scale(1.02);
+            }
+        }
+
+        /* Controls */
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .control-button {
+            padding: 16px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: 2px solid var(--accent);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-decoration: none;
+            background: transparent;
+            min-height: 60px;
+        }
+
+        .primary-button {
+            background: var(--accent);
+            color: var(--bg-primary);
+        }
+
+        .primary-button:hover:not(:disabled) {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px var(--shadow-hover);
+        }
+
+        .secondary-button {
+            background: transparent;
+            color: var(--accent);
+        }
+
+        .secondary-button:hover:not(:disabled) {
+            background: var(--accent);
+            color: var(--bg-primary);
+            transform: translateY(-2px);
+        }
+
+        .control-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .button-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Info Panel */
+        .info-panel {
+            margin-top: 30px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .info-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        .info-text {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .title {
+                font-size: 2rem;
+            }
+            
+            .controls {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .theme-toggle {
+                top: 15px;
+                right: 15px;
+                width: 44px;
+                height: 44px;
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+                margin: 10px;
+            }
+            
+            .title {
+                font-size: 1.8rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Theme Toggle Button -->
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌙</button>
+
+        <!-- Header -->
+        <div class="header">
+            <h1 class="title">AI Fall Detection System</h1>
+            <p class="subtitle">Real-time monitoring with advanced pose detection technology</p>
+        </div>
+
+        <!-- Video Container -->
+        <div class="video-container">
+            <video id="webcam" autoplay playsinline muted></video>
+            <canvas id="canvas"></canvas>
+            <div id="loadingIndicator" class="loading-indicator">
+                <div class="loading-spinner"></div>
+                <p>Loading AI Model & Camera...</p>
+            </div>
+        </div>
+
+        <!-- Status Display -->
+        <div id="statusContainer" class="status-container status-monitoring">
+            <div id="statusText" class="status-text">
+                Press "Start Detection" to begin monitoring
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button id="startButton" class="control-button primary-button">
+                <svg class="button-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Start Detection
+            </button>
+            <button id="stopButton" class="control-button secondary-button" disabled>
+                <svg class="button-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Stop Detection
+            </button>
+        </div>
+
+        <!-- Info Panel -->
+        <div class="info-panel">
+            <div class="info-title">How it works</div>
+            <div class="info-text">
+                This system uses advanced AI pose detection to monitor for potential falls in real-time. 
+                It analyzes body position, movement patterns, and posture changes to identify emergency situations 
+                and provide immediate alerts when assistance may be needed.
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden audio element for the alarm sound -->
+    <audio id="alarmSound" src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" preload="auto"></audio>
+
+    <script>
+        // DOM Elements
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const statusContainer = document.getElementById('statusContainer');
+        const statusText = document.getElementById('statusText');
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const alarmSound = document.getElementById('alarmSound');
+        const themeToggle = document.getElementById('themeToggle');
+
+        // State variables
+        let detector;
+        let detectionInterval;
+        let isDetecting = false;
+        let poseHistory = [];
+        let fallData = {
+            isFalling: false,
+            fallStartTime: null,
+            fallDetected: false,
+            lyingStartTime: null,
+        };
+
+        // Constants for fall detection logic
+        const HISTORY_LENGTH = 32;
+        const FALL_THRESHOLD = 0.25;
+        const LYING_ASPECT_RATIO = 1.5;
+        const FALL_CONFIRMATION_TIME = 1500;
+        const STATIONARY_LYING_TIME = 3000;
+
+        // Theme functionality
+        function updateTheme() {
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            themeToggle.textContent = isDark ? '☀️' : '🌙';
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateTheme();
+        }
+
+        // Initialize theme
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.setAttribute('data-theme', savedTheme);
+            updateTheme();
+        }
+
+        // Initialize the application
+        async function init() {
+            initTheme();
+            statusText.textContent = 'Loading AI model... please wait.';
+            loadingIndicator.style.display = 'flex';
+            startButton.disabled = true;
+
+            const model = poseDetection.SupportedModels.MoveNet;
+            const detectorConfig = {
+                modelType: poseDetection.movenet.modelType.LIGHTNING,
+            };
+            
+            try {
+                detector = await poseDetection.createDetector(model, detectorConfig);
+                statusText.textContent = 'AI model loaded successfully. Ready to start detection.';
+                startButton.disabled = false;
+                loadingIndicator.style.display = 'none';
+            } catch (error) {
+                console.error("Error loading model:", error);
+                statusText.textContent = 'Error loading AI model. Please refresh the page.';
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
+        // Start the camera and detection loop
+        async function startDetection() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: 1280, height: 720 },
+                    audio: false
+                });
+                video.srcObject = stream;
+                
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = resolve;
+                });
+
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                
+                isDetecting = true;
+                startButton.disabled = true;
+                stopButton.disabled = false;
+                loadingIndicator.style.display = 'none';
+                
+                resetFallState();
+                statusText.textContent = 'Monitoring active - System ready';
+                statusContainer.className = 'status-container status-monitoring';
+                
+                detectionInterval = setInterval(detectPose, 33);
+            } catch (error) {
+                console.error("Error accessing webcam:", error);
+                statusText.textContent = 'Camera access denied. Please grant permission and try again.';
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
+        // Stop the camera and detection loop
+        function stopDetection() {
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+            }
+            
+            clearInterval(detectionInterval);
+            isDetecting = false;
+            startButton.disabled = false;
+            stopButton.disabled = true;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            statusText.textContent = 'Detection stopped. Press Start to begin monitoring again.';
+            statusContainer.className = 'status-container status-monitoring';
+            
+            alarmSound.pause();
+            alarmSound.currentTime = 0;
+            resetFallState();
+        }
+
+        // Reset the fall state variables
+        function resetFallState() {
+            fallData = {
+                isFalling: false,
+                fallStartTime: null,
+                fallDetected: false,
+                lyingStartTime: null,
+            };
+            poseHistory = [];
+            
+            if (isDetecting) {
+                statusText.textContent = 'Monitoring active - No issues detected';
+            }
+        }
+
+        // The main detection function
+        async function detectPose() {
+            if (!isDetecting || !detector) return;
+
+            try {
+                const poses = await detector.estimatePoses(video);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                if (poses.length > 0) {
+                    const keypoints = poses[0].keypoints;
+                    drawPose(keypoints);
+                    checkForFall(keypoints);
+                }
+            } catch (error) {
+                console.error("Error during pose estimation:", error);
+            }
+        }
+        
+        // Analyzes the pose history to detect a fall
+        function checkForFall(keypoints) {
+            if (fallData.fallDetected) return; 
+
+            const { y_center, aspect_ratio } = getPoseMetrics(keypoints);
+            if (y_center === null) return;
+
+            poseHistory.push({ y_center, timestamp: Date.now() });
+            if (poseHistory.length > HISTORY_LENGTH) {
+                poseHistory.shift();
+            }
+
+            if (poseHistory.length > 10) {
+                const startPoint = poseHistory[0];
+                const endPoint = poseHistory[poseHistory.length - 1];
+                const y_change = endPoint.y_center - startPoint.y_center;
+                const verticalDrop = y_change / canvas.height;
+
+                if (verticalDrop > FALL_THRESHOLD) {
+                    fallData.isFalling = true;
+                }
+            }
+
+            if (fallData.isFalling) {
+                if (aspect_ratio > LYING_ASPECT_RATIO) {
+                    if (!fallData.fallStartTime) {
+                        fallData.fallStartTime = Date.now();
+                    }
+                    if (Date.now() - fallData.fallStartTime >= FALL_CONFIRMATION_TIME) {
+                        triggerAlarm('🚨 FALL DETECTED! Emergency assistance may be needed.');
+                        fallData.fallDetected = true;
+                        return;
+                    }
+                } else {
+                    fallData.fallStartTime = null;
+                }
+            }
+
+            if (aspect_ratio > LYING_ASPECT_RATIO) {
+                if (fallData.lyingStartTime === null) {
+                    fallData.lyingStartTime = Date.now();
+                }
+                if (Date.now() - fallData.lyingStartTime >= STATIONARY_LYING_TIME) {
+                    triggerAlarm('⚠️ PERSON MAY BE UNRESPONSIVE! Check immediately.');
+                    fallData.fallDetected = true;
+                }
+            } else {
+                fallData.lyingStartTime = null;
+            }
+        }
+
+        // Calculates key metrics from the pose keypoints
+        function getPoseMetrics(keypoints) {
+            const relevantPoints = keypoints.filter(p => 
+                ['left_shoulder', 'right_shoulder', 'left_hip', 'right_hip', 'left_ankle', 'right_ankle'].includes(p.name) && 
+                p.score > 0.3
+            );
+            
+            if (relevantPoints.length < 4) return { y_center: null, aspect_ratio: 0 };
+            
+            let minY = Infinity, maxY = -Infinity, minX = Infinity, maxX = -Infinity;
+
+            relevantPoints.forEach(p => {
+                minY = Math.min(minY, p.y);
+                maxY = Math.max(maxY, p.y);
+                minX = Math.min(minX, p.x);
+                maxX = Math.max(maxX, p.x);
+            });
+
+            const height = maxY - minY;
+            const width = maxX - minX;
+            const y_center = (minY + maxY) / 2;
+            const aspect_ratio = height > 10 ? width / height : 0;
+
+            return { y_center, aspect_ratio };
+        }
+
+        // Trigger the visual and audio alarm
+        function triggerAlarm(message) {
+            statusText.textContent = message;
+            statusContainer.className = 'status-container status-alarm';
+            
+            alarmSound.loop = true;
+            alarmSound.play().catch(e => {
+                console.log('Audio play failed:', e);
+            });
+        }
+        
+        // Draws the detected pose skeleton on the canvas
+        function drawPose(keypoints) {
+            const isDarkMode = document.body.getAttribute('data-theme') === 'dark';
+            const pointColor = isDarkMode ? '#ffffff' : '#000000';
+            const lineColor = '#22c55e'; // Green color for skeleton lines
+
+            // Draw keypoints
+            keypoints.forEach(point => {
+                if (point.score > 0.5) {
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 4, 0, 2 * Math.PI);
+                    ctx.fillStyle = pointColor;
+                    ctx.fill();
+                    
+                    // Add a subtle glow effect
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 6, 0, 2 * Math.PI);
+                    ctx.strokeStyle = pointColor;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            });
+
+            // Draw skeleton with green lines
+            const adjacentKeyPoints = poseDetection.util.getAdjacentPairs(poseDetection.SupportedModels.MoveNet);
+            adjacentKeyPoints.forEach(([i, j]) => {
+                const kp1 = keypoints[i];
+                const kp2 = keypoints[j];
+                if (kp1.score > 0.5 && kp2.score > 0.5) {
+                    ctx.beginPath();
+                    ctx.moveTo(kp1.x, kp1.y);
+                    ctx.lineTo(kp2.x, kp2.y);
+                    ctx.strokeStyle = lineColor;
+                    ctx.lineWidth = 3; // Made lines slightly thicker for better visibility
+                    ctx.stroke();
+                }
+            });
+        }
+
+        // Event Listeners
+        themeToggle.addEventListener('click', toggleTheme);
+        startButton.addEventListener('click', startDetection);
+        stopButton.addEventListener('click', stopDetection);
+        
+        // Initialize on page load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

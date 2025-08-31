@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Safety AI - Industrial Workspace Monitoring</title>
+  <style>
+    :root {
+      /* Light mode colors */
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8f9fa;
+      --bg-card: #ffffff;
+      --text-primary: #1a1a1a;
+      --text-secondary: #6c757d;
+      --accent: #000000;
+      --accent-hover: #333333;
+      --border: #e9ecef;
+      --shadow: rgba(0, 0, 0, 0.1);
+      --shadow-hover: rgba(0, 0, 0, 0.2);
+    }
+
+    [data-theme="dark"] {
+      /* Dark mode colors */
+      --bg-primary: #1a1a1a;
+      --bg-secondary: #2d2d2d;
+      --bg-card: #2d2d2d;
+      --text-primary: #ffffff;
+      --text-secondary: #adb5bd;
+      --accent: #ffffff;
+      --accent-hover: #e9ecef;
+      --border: #495057;
+      --shadow: rgba(0, 0, 0, 0.3);
+      --shadow-hover: rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      transition: all 0.3s ease;
+    }
+
+    /* Navigation */
+    nav {
+      background: rgba(var(--bg-card-rgb, 255, 255, 255), 0.95);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 40px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      transition: all 0.3s ease;
+    }
+
+    [data-theme="dark"] nav {
+      background: rgba(45, 45, 45, 0.95);
+    }
+
+    .nav-left, .nav-center, .nav-right {
+      display: flex;
+      align-items: center;
+    }
+
+    .nav-left {
+      flex: 1;
+    }
+
+    .nav-center {
+      flex: 2;
+      justify-content: center;
+      gap: 40px;
+    }
+
+    .nav-right {
+      flex: 1;
+      justify-content: flex-end;
+      position: relative;
+      gap: 20px;
+    }
+
+    .nav-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text-primary);
+      letter-spacing: -0.5px;
+    }
+
+    .nav-button, .nav-link {
+      background: none;
+      border: none;
+      color: var(--text-primary);
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .nav-link:hover, .nav-button:hover {
+      background: var(--bg-secondary);
+      transform: translateY(-1px);
+    }
+
+    /* Theme Toggle */
+    .theme-toggle {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.3s ease;
+    }
+
+    .theme-toggle:hover {
+      background: var(--accent);
+      color: var(--bg-primary);
+    }
+
+    .dropdown {
+      position: relative;
+    }
+
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 20px;
+      box-shadow: 0 10px 40px var(--shadow);
+      top: 50px;
+      right: 0;
+      border-radius: 12px;
+      min-width: 280px;
+      z-index: 1000;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: all 0.3s ease;
+    }
+
+    .dropdown:hover .dropdown-content {
+      display: block;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .dropdown-content .item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+      padding: 10px;
+      border-radius: 8px;
+      transition: background 0.3s ease;
+    }
+
+    .dropdown-content .item:hover {
+      background: var(--bg-secondary);
+    }
+
+    .dropdown-content .item:last-child {
+      margin-bottom: 0;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: var(--bg-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 15px;
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    /* Main Content */
+    main {
+      padding-top: 80px;
+    }
+
+    section {
+      padding: 100px 40px;
+      text-align: center;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* Home Section */
+    #home {
+      background: var(--bg-primary);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .home-content {
+      position: relative;
+      z-index: 2;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .home-title {
+      font-size: clamp(2.5rem, 5vw, 4.5rem);
+      font-weight: 900;
+      margin-bottom: 30px;
+      color: var(--text-primary);
+      letter-spacing: -2px;
+      animation: fadeInUp 1s ease-out;
+    }
+
+    .home-description {
+      font-size: 1.3rem;
+      color: var(--text-secondary);
+      margin: 0 auto 40px;
+      line-height: 1.7;
+      font-weight: 400;
+      animation: fadeInUp 1s ease-out 0.3s both;
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+      animation: fadeInUp 1s ease-out 0.6s both;
+    }
+
+    .cta-button {
+      padding: 16px 32px;
+      font-size: 16px;
+      font-weight: 600;
+      border: 2px solid var(--accent);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .primary-btn {
+      background: var(--accent);
+      color: var(--bg-primary);
+    }
+
+    .primary-btn:hover {
+      background: var(--accent-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px var(--shadow-hover);
+    }
+
+    .secondary-btn {
+      background: transparent;
+      color: var(--accent);
+    }
+
+    .secondary-btn:hover {
+      background: var(--accent);
+      color: var(--bg-primary);
+      transform: translateY(-2px);
+    }
+
+    /* Features Section */
+    #features {
+      background: var(--bg-secondary);
+    }
+
+    .section-title {
+      font-size: 3rem;
+      font-weight: 800;
+      margin-bottom: 20px;
+      color: var(--text-primary);
+      letter-spacing: -1px;
+    }
+
+    .section-subtitle {
+      font-size: 1.2rem;
+      color: var(--text-secondary);
+      margin-bottom: 60px;
+      font-weight: 400;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 40px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      padding: 40px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      transition: all 0.3s ease;
+      text-align: left;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 40px var(--shadow-hover);
+      border-color: var(--accent);
+    }
+
+    .feature-icon {
+      width: 60px;
+      height: 60px;
+      margin-bottom: 24px;
+      background: var(--accent);
+      color: var(--bg-primary);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    .feature-card h3 {
+      font-size: 1.5rem;
+      margin-bottom: 15px;
+      color: var(--text-primary);
+      font-weight: 700;
+    }
+
+    .feature-card p {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      font-weight: 400;
+    }
+
+    /* Team Section */
+    #team {
+      background: var(--bg-primary);
+    }
+
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 40px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .team-member {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px 30px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .team-member:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 20px 40px var(--shadow-hover);
+      border-color: var(--accent);
+    }
+
+    .team-member .avatar {
+      width: 80px;
+      height: 80px;
+      font-size: 1.8rem;
+      margin: 0 auto 20px;
+    }
+
+    .team-member h4 {
+      font-size: 1.4rem;
+      margin: 15px 0 10px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .team-member p {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      font-weight: 400;
+    }
+
+    .team-member strong {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      nav {
+        padding: 15px 20px;
+      }
+      
+      .nav-center {
+        gap: 20px;
+      }
+      
+      .nav-center a {
+        font-size: 14px;
+        padding: 6px 12px;
+      }
+      
+      section {
+        padding: 80px 20px;
+      }
+      
+      .home-title {
+        font-size: 2.5rem;
+        letter-spacing: -1px;
+      }
+      
+      .home-description {
+        font-size: 1.1rem;
+      }
+      
+      .cta-buttons {
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      .features-grid {
+        grid-template-columns: 1fr;
+        gap: 30px;
+      }
+      
+      .team-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 30px;
+      }
+      
+      .section-title {
+        font-size: 2.5rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .nav-right {
+        flex-direction: column;
+        gap: 10px;
+      }
+      
+      .theme-toggle {
+        font-size: 16px;
+        padding: 6px 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-left">
+      <div class="nav-title">Safety AI</div>
+    </div>
+    <div class="nav-center">
+      <a href="#home" class="nav-link">Home</a>
+      <a href="#features" class="nav-link">Features</a>
+      <a href="#team" class="nav-link">Team</a>
+    <a href="fall.html" class="nav-link">Fall Detection</a>
+    <a href="helmet.html" class="nav-link">Helmet Detection</a>
+    <a href="speed.html" class="nav-link">Speed Monitoring</a>
+    </div>
+    <div class="nav-right">
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">🌙</button>
+      <div class="dropdown">
+        <button class="nav-button">Contact</button>
+        <div class="dropdown-content">
+          <div class="item">
+            <div class="avatar">S</div>
+            <div>
+              <strong>Syeda</strong><br>
+              <span style="font-size: 0.9em;">CE Dept - AI & CV Specialist</span>
+            </div>
+          </div>
+          <div class="item">
+            <div class="avatar">M</div>
+            <div>
+              <strong>Madhuri</strong><br>
+              <span style="font-size: 0.9em;">CE Dept - System Integration</span>
+            </div>
+          </div>
+          <div class="item">
+            <div class="avatar">N</div>
+            <div>
+              <strong>Navya</strong><br>
+              <span style="font-size: 0.9em;">CE Dept - Frontend Developer</span>
+            </div>
+          </div>
+          <div class="item">
+            <div class="avatar">Mo</div>
+            <div>
+              <strong>Mohit</strong><br>
+              <span style="font-size: 0.9em;">CE Dept - Backend & Analytics</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <section id="home">
+      <div class="home-content">
+        <h1 class="home-title">AI-Powered Safety Monitoring</h1>
+        <p class="home-description">
+          Transform workplace safety with cutting-edge computer vision technology. Our minimalist AI solutions identify risks, ensure compliance, and provide real-time alerts to prevent accidents across industrial sectors.
+        </p>
+        <div class="cta-buttons">
+          <a href="#features" class="cta-button primary-btn">Explore Features</a>
+          <a href="#team" class="cta-button secondary-btn">Meet Our Team</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="features">
+  <h2 class="section-title">Our Solutions</h2>
+  <p class="section-subtitle">Advanced AI-powered safety monitoring for modern workplaces</p>
+  <div class="features-grid">
+    
+    <a href="helmet.html" class="feature-card">
+      <div class="feature-icon">🛡️</div>
+      <h3>Helmet Detection</h3>
+      <p>Ensures workers comply with safety rules by detecting helmets and safety vests in real-time.</p>
+    </a>
+
+    <a href="fall.html" class="feature-card">
+      <div class="feature-icon">🎯</div>
+      <h3>Fall Detection</h3>
+      <p>Detects falls instantly using AI vision, sending immediate alerts to supervisors to prevent injuries.</p>
+    </a>
+
+    <a href="speed.html" class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3>Speed Monitoring</h3>
+      <p>Tracks and alerts unsafe vehicle/machinery speeds, keeping operations within safe limits.</p>
+    </a>
+
+  </div>
+</section>
+
+
+    <section id="team">
+      <h2 class="section-title">Our Expert Team</h2>
+      <p class="section-subtitle">Dedicated professionals driving innovation in workplace safety</p>
+      <div class="team-grid">
+        <div class="team-member">
+          <div class="avatar">S</div>
+          <h4>Syeda</h4>
+          <p>Computer Engineering<br><strong>AI & Computer Vision Specialist</strong><br>Expert in machine learning algorithms and real-time image processing systems</p>
+        </div>
+        <div class="team-member">
+          <div class="avatar">M</div>
+          <h4>Madhuri</h4>
+          <p>Computer Engineering<br><strong>System Integration Lead</strong><br>Specializes in seamless integration of AI systems with industrial infrastructure</p>
+        </div>
+        <div class="team-member">
+          <div class="avatar">N</div>
+          <h4>Navya</h4>
+          <p>Computer Engineering<br><strong>Frontend Developer</strong><br>Creates intuitive user interfaces and responsive dashboard experiences</p>
+        </div>
+        <div class="team-member">
+          <div class="avatar">Mo</div>
+          <h4>Mohit</h4>
+          <p>Computer Engineering<br><strong>Backend & Risk Analytics</strong><br>Develops robust backend systems and advanced risk assessment algorithms</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Theme toggle functionality
+    const themeToggle = document.getElementById('themeToggle');
+    const body = document.body;
+
+    // Check for saved theme preference or default to 'light'
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    body.setAttribute('data-theme', currentTheme);
+    updateThemeIcon(currentTheme);
+
+    themeToggle.addEventListener('click', () => {
+      const currentTheme = body.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      
+      body.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      updateThemeIcon(newTheme);
+    });
+
+    function updateThemeIcon(theme) {
+      themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+    }
+
+    // Smooth scrolling enhancement
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+
+    // Navbar background change on scroll
+    window.addEventListener('scroll', function() {
+      const nav = document.querySelector('nav');
+      if (window.scrollY > 50) {
+        nav.style.boxShadow = '0 2px 20px var(--shadow)';
+      } else {
+        nav.style.boxShadow = 'none';
+      }
+    });
+
+    // Smooth entrance animation
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver(function(entries) {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+        }
+      });
+    }, observerOptions);
+
+    // Observe feature cards and team members
+    document.querySelectorAll('.feature-card, .team-member').forEach(el => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(20px)';
+      el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+      observer.observe(el);
+    });
+  </script>
+</body>
+</html>

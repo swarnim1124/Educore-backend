@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle Speed Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .loader {
+            border-top-color: #3498db;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-black text-white flex flex-col items-center min-h-screen p-4">
+
+    <div class="w-full max-w-6xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white">Vehicle Speed Detection</h1>
+            <p class="text-gray-300 mt-2">Analyze video feeds to detect overspeeding vehicles using Machine Learning.</p>
+        </header>
+
+        <!-- Loading Modal -->
+        <div id="loading-modal" class="fixed inset-0 bg-black bg-opacity-70 flex flex-col justify-center items-center z-50">
+            <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24 mb-4"></div>
+            <p id="loading-text" class="text-xl text-white">Loading Machine Learning Model...</p>
+        </div>
+        
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column: Settings & Results -->
+            <div class="lg-col-span-1 space-y-6">
+                <!-- Settings Card -->
+                <div class="bg-black border border-gray-700 rounded-lg shadow-lg p-6">
+                    <h2 class="text-2xl font-semibold mb-4 border-b border-gray-600 pb-2">Settings</h2>
+                    
+                    <!-- Input Source Tabs -->
+                    <div class="mb-4">
+                        <div class="flex border-b border-gray-600">
+                            <button id="tab-upload" class="flex-1 py-2 text-center font-medium border-b-2 border-white text-white" onclick="switchTab('upload')">Upload File</button>
+                            <button id="tab-live" class="flex-1 py-2 text-center font-medium border-b-2 border-transparent text-gray-500 hover:text-white" onclick="switchTab('live')">Live IP Camera</button>
+                        </div>
+                    </div>
+
+                    <!-- File Upload Section -->
+                    <div id="upload-section">
+                        <label for="video-upload" class="block text-sm font-medium text-gray-300 mb-2">Upload a video file:</label>
+                        <input type="file" id="video-upload" accept="video/*" class="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600 cursor-pointer"/>
+                    </div>
+
+                    <!-- Live Feed Section (hidden by default) -->
+                    <div id="live-section" class="hidden">
+                        <label for="ip-camera-url" class="block text-sm font-medium text-gray-300 mb-2">IP Camera URL (e.g., from phone app):</label>
+                        <input type="text" id="ip-camera-url" placeholder="http://192.168.1.10:8080/video" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-white">
+                    </div>
+                    
+                    <div class="mt-4 space-y-4">
+                         <div>
+                            <label for="speed-limit" class="block text-sm font-medium text-gray-300">Speed Limit (km/h)</label>
+                            <input type="number" id="speed-limit" value="60" class="w-full mt-1 bg-gray-900 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-white">
+                        </div>
+                        <div>
+                            <label for="calibration-distance" class="block text-sm font-medium text-gray-300">Real-World Distance (meters)</label>
+                            <p class="text-xs text-gray-400 mb-1">Distance between the two calibration lines.</p>
+                            <input type="number" id="calibration-distance" value="10" class="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-white">
+                        </div>
+                    </div>
+
+                    <button id="start-button" class="w-full mt-6 bg-white text-black hover:bg-gray-200 font-bold py-2 px-4 rounded-lg transition duration-300 disabled:bg-gray-700 disabled:text-gray-400" disabled>
+                        Start Detection
+                    </button>
+                </div>
+
+                <!-- Results Card -->
+                 <div class="bg-black border border-gray-700 rounded-lg shadow-lg p-6">
+                    <h2 class="text-2xl font-semibold mb-4 border-b border-gray-600 pb-2">Overspeeding Events</h2>
+                    <div id="results-container" class="max-h-96 overflow-y-auto space-y-3 pr-2">
+                         <!-- Results will be injected here -->
+                         <p id="no-results" class="text-gray-400">No overspeeding vehicles detected yet.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Video Player & Canvas -->
+            <div class="lg:col-span-2 bg-black border border-gray-700 rounded-lg shadow-lg p-4 flex justify-center items-center relative min-h-[300px] lg:min-h-[600px]">
+                <p id="video-placeholder" class="text-gray-600">Video stream will appear here</p>
+                <video id="video-player" class="hidden w-full h-auto max-h-[80vh] rounded" controls muted playsinline></video>
+                <canvas id="canvas" class="absolute top-0 left-0 w-full h-full pointer-events-none"></canvas>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        const videoElement = document.getElementById('video-player');
+        const canvasElement = document.getElementById('canvas');
+        const ctx = canvasElement.getContext('2d');
+        const startButton = document.getElementById('start-button');
+        const videoUpload = document.getElementById('video-upload');
+        const ipCameraUrlInput = document.getElementById('ip-camera-url');
+        const resultsContainer = document.getElementById('results-container');
+        const noResultsText = document.getElementById('no-results');
+        const loadingModal = document.getElementById('loading-modal');
+        const loadingText = document.getElementById('loading-text');
+        
+        let model = null;
+        let trackedVehicles = []; // { id, x, y, entryTime, exitTime, speed, detected }
+        let nextTrackId = 0;
+        let activeTab = 'upload';
+        let detectionInterval;
+
+        // --- Configuration ---
+        const CALIBRATION_LINE_1_Y_PERCENT = 0.4;
+        const CALIBRATION_LINE_2_Y_PERCENT = 0.6;
+        const TRACKING_MAX_DISTANCE = 150; // Max pixels a vehicle can move between frames to be considered the same track
+        const VEHICLE_CLASSES = ['car', 'motorcycle', 'truck', 'bus'];
+
+        // --- Initialization ---
+        window.onload = async () => {
+            try {
+                model = await cocoSsd.load();
+                loadingText.textContent = 'Model Loaded Successfully!';
+                setTimeout(() => {
+                    loadingModal.style.display = 'none';
+                    startButton.disabled = false;
+                }, 1000);
+            } catch (error) {
+                console.error("Failed to load model:", error);
+                loadingText.textContent = 'Error: Could not load model.';
+            }
+        };
+
+        // --- UI Logic ---
+        function switchTab(tab) {
+            activeTab = tab;
+            const tabUpload = document.getElementById('tab-upload');
+            const tabLive = document.getElementById('tab-live');
+            const uploadSection = document.getElementById('upload-section');
+            const liveSection = document.getElementById('live-section');
+
+            if (tab === 'upload') {
+                tabUpload.classList.add('border-white', 'text-white');
+                tabUpload.classList.remove('border-transparent', 'text-gray-500');
+                tabLive.classList.add('border-transparent', 'text-gray-500');
+                tabLive.classList.remove('border-white', 'text-white');
+                uploadSection.classList.remove('hidden');
+                liveSection.classList.add('hidden');
+            } else {
+                tabLive.classList.add('border-white', 'text-white');
+                tabLive.classList.remove('border-transparent', 'text-gray-500');
+                tabUpload.classList.add('border-transparent', 'text-gray-500');
+                tabUpload.classList.remove('border-white', 'text-white');
+                liveSection.classList.remove('hidden');
+                uploadSection.classList.add('hidden');
+            }
+        }
+
+        // --- Video Source Handling ---
+        videoUpload.onchange = (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                setupVideo(url);
+            }
+        };
+
+        startButton.onclick = () => {
+            if (detectionInterval) {
+                 clearInterval(detectionInterval);
+                 detectionInterval = null;
+                 startButton.textContent = 'Start Detection';
+                 startButton.classList.remove('bg-gray-700', 'hover:bg-gray-600');
+                 startButton.classList.add('bg-white', 'text-black', 'hover:bg-gray-200');
+                 return;
+            }
+
+            if (activeTab === 'live') {
+                const url = ipCameraUrlInput.value;
+                if (!url) {
+                    alert('Please enter an IP Camera URL.');
+                    return;
+                }
+                // Note: Due to browser security (CORS), many public IP streams won't work.
+                // It's best to use a local network stream from a phone app.
+                setupVideo(url);
+            }
+
+            if (!videoElement.src) {
+                alert('Please select a video source first.');
+                return;
+            }
+            
+            startButton.textContent = 'Stop Detection';
+            startButton.classList.add('bg-gray-700', 'hover:bg-gray-600');
+            startButton.classList.remove('bg-white', 'text-black', 'hover:bg-gray-200');
+            
+            videoElement.play();
+            detectionInterval = setInterval(detectFrame, 1000 / 30); // ~30 FPS
+        };
+
+        function setupVideo(src) {
+            document.getElementById('video-placeholder').classList.add('hidden');
+            videoElement.classList.remove('hidden');
+            videoElement.src = src;
+            videoElement.onloadedmetadata = () => {
+                canvasElement.width = videoElement.videoWidth;
+                canvasElement.height = videoElement.videoHeight;
+            };
+        }
+
+        // --- Core Detection & Tracking Logic ---
+        async function detectFrame() {
+            if (videoElement.paused || videoElement.ended) return;
+
+            const predictions = await model.detect(videoElement);
+            const vehicleDetections = predictions.filter(p => VEHICLE_CLASSES.includes(p.class) && p.score > 0.6);
+            
+            updateTrackedVehicles(vehicleDetections);
+            drawOnCanvas(vehicleDetections);
+        }
+
+        function updateTrackedVehicles(detections) {
+            // Mark all existing tracks as not detected in this frame
+            trackedVehicles.forEach(v => v.detected = false);
+
+            // Match new detections with existing tracks
+            for (const detection of detections) {
+                const [x, y, w, h] = detection.bbox;
+                const centerX = x + w / 2;
+                const centerY = y + h / 2;
+                let bestMatch = null;
+                let minDistance = TRACKING_MAX_DISTANCE;
+
+                for (const vehicle of trackedVehicles) {
+                    const dist = Math.hypot(centerX - vehicle.x, centerY - vehicle.y);
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        bestMatch = vehicle;
+                    }
+                }
+                
+                if (bestMatch) {
+                    bestMatch.x = centerX;
+                    bestMatch.y = centerY;
+                    bestMatch.detected = true;
+                    checkLineCrossing(bestMatch);
+                } else {
+                    trackedVehicles.push({
+                        id: nextTrackId++,
+                        x: centerX,
+                        y: centerY,
+                        entryTime: null,
+                        exitTime: null,
+                        speed: null,
+                        detected: true,
+                    });
+                }
+            }
+            
+            // Clean up old tracks that are no longer detected
+            trackedVehicles = trackedVehicles.filter(v => v.detected);
+        }
+        
+        function checkLineCrossing(vehicle) {
+            const line1Y = canvasElement.height * CALIBRATION_LINE_1_Y_PERCENT;
+            const line2Y = canvasElement.height * CALIBRATION_LINE_2_Y_PERCENT;
+
+            // Check for crossing line 1 (entry)
+            if (vehicle.y > line1Y && vehicle.y < (line1Y + 10) && !vehicle.entryTime) {
+                vehicle.entryTime = Date.now();
+            }
+
+            // Check for crossing line 2 (exit) after entry
+            if (vehicle.y > line2Y && vehicle.y < (line2Y + 10) && vehicle.entryTime && !vehicle.exitTime) {
+                vehicle.exitTime = Date.now();
+                calculateSpeed(vehicle);
+            }
+        }
+
+        function calculateSpeed(vehicle) {
+            const timeDiffSeconds = (vehicle.exitTime - vehicle.entryTime) / 1000;
+            if (timeDiffSeconds <= 0) return;
+            
+            const realDistanceMeters = parseFloat(document.getElementById('calibration-distance').value);
+            const speedMps = realDistanceMeters / timeDiffSeconds;
+            const speedKmph = (speedMps * 3.6).toFixed(1);
+            vehicle.speed = speedKmph;
+
+            const speedLimit = parseFloat(document.getElementById('speed-limit').value);
+            if (speedKmph > speedLimit) {
+                logOverspeeding(vehicle);
+            }
+        }
+        
+        // --- Drawing on Canvas ---
+        function drawOnCanvas(detections) {
+            ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+            // Draw calibration lines
+            const line1Y = canvasElement.height * CALIBRATION_LINE_1_Y_PERCENT;
+            const line2Y = canvasElement.height * CALIBRATION_LINE_2_Y_PERCENT;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([10, 5]);
+            
+            ctx.beginPath();
+            ctx.moveTo(0, line1Y);
+            ctx.lineTo(canvasElement.width, line1Y);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(0, line2Y);
+            ctx.lineTo(canvasElement.width, line2Y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw detections and tracked info
+            for (const detection of detections) {
+                const [x, y, w, h] = detection.bbox;
+                const speedLimit = parseFloat(document.getElementById('speed-limit').value);
+                
+                // Find corresponding tracked vehicle
+                const centerX = x + w / 2;
+                const centerY = y + h / 2;
+                const trackedVehicle = trackedVehicles.find(v => {
+                    return Math.hypot(centerX - v.x, centerY - v.y) < 10;
+                });
+
+                if (!trackedVehicle) continue;
+
+                const isOverspeeding = trackedVehicle.speed && trackedVehicle.speed > speedLimit;
+
+                // Bounding Box
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = isOverspeeding ? 4 : 2;
+                ctx.strokeRect(x, y, w, h);
+
+                // Info Box
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                const text = trackedVehicle.speed 
+                    ? `ID ${trackedVehicle.id}: ${trackedVehicle.speed} km/h`
+                    : `ID ${trackedVehicle.id}`;
+                const textWidth = ctx.measureText(text).width;
+                ctx.fillRect(x, y, textWidth + 10, 25);
+                
+                // Text
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '16px Inter';
+                ctx.fillText(text, x + 5, y + 18);
+            }
+        }
+
+        // --- Results Logging ---
+        function logOverspeeding(vehicle) {
+            if (noResultsText) {
+                noResultsText.remove();
+            }
+            const timestamp = new Date().toLocaleTimeString();
+            const resultCard = document.createElement('div');
+            resultCard.className = 'bg-gray-900 p-3 rounded-lg flex justify-between items-center';
+            resultCard.innerHTML = `
+                <div>
+                    <p class="font-semibold">Vehicle ID: ${vehicle.id}</p>
+                    <p class="text-sm text-gray-400">Time: ${timestamp}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xl font-bold text-white">${vehicle.speed} km/h</p>
+                    <p class="text-xs text-gray-400">Limit: ${document.getElementById('speed-limit').value} km/h</p>
+                </div>
+            `;
+            resultsContainer.prepend(resultCard);
+        }
+
+    </script>
+</body>
+</html>
+
