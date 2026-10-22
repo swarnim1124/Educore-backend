@@ -112,6 +112,3 @@ Interactive API docs are at `http://localhost:8000/docs`.
 
 Developed collaboratively. Original framework authors: Siddharth Amdal, Akshay Basutkar, Swarnim Deshpande.
 
-## License
-
-Add a LICENSE file before publishing.
