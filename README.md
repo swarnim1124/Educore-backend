@@ -102,11 +102,11 @@ Interactive API docs are at `http://localhost:8000/docs`.
 
 ## My contributions
 
-> Edit this section to match what you actually built.
-
-- Backend modules: _<e.g. m_profile, m_exam subsystems>_
-- Dispatcher-based API design and contracts: _<...>_
-- _<Tests, seeding, bug fixes, performance work, etc.>_
+- Co-developed the `m_super_admin` module: module/sub-module registry, action and action-type management, system config, and master data management (MDM) for institutions
+- Worked on the FastAPI dispatcher backend: modular routing, RBAC and dynamic permissions, JWT authentication
+- Built data tooling for the PostgreSQL schema, including seeding and verification scripts for the profile and exam modules
+- Wrote API contracts and documentation so the Android and web clients could integrate against the modules
+- Collaborated with a team of 3 backend developers on module design and code reviews
 
 ## Credits
 
