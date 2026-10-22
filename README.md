@@ -100,15 +100,7 @@ Interactive API docs are at `http://localhost:8000/docs`.
 - [API contracts](contracts/)
 - [Engineering standard](docs/engineering/OneApp_Engineering_Standard_v1.md)
 
-## My contributions
 
-- Co-developed the `m_super_admin` module: module/sub-module registry, action and action-type management, system config, and master data management (MDM) for institutions
-- Worked on the FastAPI dispatcher backend: modular routing, RBAC and dynamic permissions, JWT authentication
-- Built data tooling for the PostgreSQL schema, including seeding and verification scripts for the profile and exam modules
-- Wrote API contracts and documentation so the Android and web clients could integrate against the modules
-- Collaborated with a team of 3 backend developers on module design and code reviews
-
-## Credits
 
 Developed collaboratively. Original framework authors: Siddharth Amdal, Akshay Basutkar, Swarnim Deshpande.
 
