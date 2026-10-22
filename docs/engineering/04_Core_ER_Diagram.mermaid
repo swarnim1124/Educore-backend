@@ -1,0 +1,393 @@
+erDiagram
+    sch_aaa_tb_password_reset {
+        string id
+        string user_id
+        string reset_token
+        string requested_at
+        string request_ip
+        string expires_at
+        string used_at
+        string status_id
+    }
+
+    sch_aaa_tb_password_reset ||--o{ sch_iam_tb_user : "user_id -> id"
+    sch_iam_tb_user_address {
+        string id
+        string user_id
+        string address_id
+        string is_primary
+        string status_id
+        string start_date
+        string end_date
+    }
+
+    sch_iam_tb_user_address ||--o{ sch_iam_tb_user : "user_id -> id"
+    sch_iam_tb_user_aud {
+        string id
+        string user_id
+        string action_type_id
+        string action_by
+        string action_at
+        string old_status_id
+        string new_status_id
+        string remarks
+    }
+
+    sch_iam_tb_user_aud ||--o{ sch_iam_tb_user : "action_by -> id"
+    sch_iam_tb_user_aud ||--o{ sch_iam_tb_user : "user_id -> id"
+    sch_iam_tb_user_emergency_contact {
+        string id
+        string user_id
+        string f_name
+        string m_name
+        string l_name
+        string mobile
+        string email
+        string is_primary
+        string status_id
+    }
+
+    sch_iam_tb_user_emergency_contact ||--o{ sch_iam_tb_user : "user_id -> id"
+    sch_iam_tb_user_identifier {
+        string id
+        string user_id
+        string identifier_type_id
+        string identifier_value
+        string scanned_copy
+        string issuing_authority
+        string valid_from
+        string valid_to
+        string status_id
+    }
+
+    sch_iam_tb_user_identifier ||--o{ sch_iam_tb_user : "user_id -> id"
+    sch_iam_tb_user_login {
+        string id
+        string user_id
+        string login_at
+        string logout_at
+        string login_status_id
+        string failure_reason_id
+        string login_method_id
+        string ip_addr
+    }
+
+    sch_iam_tb_user_login ||--o{ sch_iam_tb_user : "user_id -> id"
+    sch_iam_tb_user_med {
+        string id
+        string user_id
+        string height
+        string weight
+        string blood_group_id
+        string allergy_info
+        string med_condition
+        string disability_type_id
+        string emergency_note
+    }
+
+    sch_iam_tb_user_med ||--o{ sch_iam_tb_user : "user_id -> id"
+    sch_iam_tb_user_preference {
+        string id
+        string user_id
+        string preference_type_id
+        string value
+        string created_at
+        string updated_at
+    }
+
+    sch_iam_tb_user_preference ||--o{ sch_iam_tb_user : "user_id -> id"
+    sch_iam_tb_user_profile {
+        string id
+        string salutation_id
+        string user_id
+        string f_name
+        string m_name
+        string l_name
+        string dob
+        string gender_id
+        string profile_photo_id
+        string nationality_id
+        string primary_lang_id
+        string marital_status_id
+        string created_at
+        string updated_at
+    }
+
+    sch_iam_tb_user_profile ||--o{ sch_iam_tb_user : "user_id -> id"
+    sch_iam_tb_user_session {
+        string id
+        string login_id
+        string user_id
+        string user_org_id
+        string session_token
+        string refresh_token
+        string last_activity_at
+        string expires_at
+        string device_name
+        string device_type_id
+        string device_os
+        string browser
+        string ip_address
+        string user_agent
+        string status_id
+    }
+
+    sch_iam_tb_user_session ||--o{ sch_iam_tb_user_login : "login_id -> id"
+    sch_iam_tb_user_session ||--o{ sch_iam_tb_user : "user_id -> id"
+    sch_rbac_tb_position {
+        string id
+        string title
+        string org_id
+        string dept_id
+        string position_type_id
+        string status_id
+    }
+
+    sch_rbac_tb_user_org {
+        string id
+        string user_id
+        string org_id
+        string status_id
+        string created_at
+        string updated_at
+    }
+
+    sch_rbac_tb_user_org ||--o{ sch_iam_tb_user : "user_id -> id"
+    sch_aaa_tb_auth_log {
+        string id
+        string user_id
+        string user_org_id
+        string session_id
+        string evt_type_id
+        string evt_status_id
+        string evt_at
+        string ip_address
+        string user_agent
+        string device_name
+        string failure_reason_id
+    }
+
+    sch_aaa_tb_auth_log ||--o{ sch_iam_tb_user_session : "session_id -> id"
+    sch_aaa_tb_auth_log ||--o{ sch_iam_tb_user : "user_id -> id"
+    sch_aaa_tb_auth_log ||--o{ sch_rbac_tb_user_org : "user_org_id -> id"
+    sch_rbac_tb_position_assignment {
+        string id
+        string position_id
+        string user_org_id
+        string start_date
+        string end_date
+        string status_id
+    }
+
+    sch_rbac_tb_position_assignment ||--o{ sch_rbac_tb_position : "position_id -> id"
+    sch_rbac_tb_position_assignment ||--o{ sch_rbac_tb_user_org : "user_org_id -> id"
+    sch_iam_tb_user_grp_type {
+        string id
+        string user_group_name
+        string grp_code
+        string description
+        string status_id
+        string created_at
+    }
+
+    sch_iam_tb_role {
+        string id
+        string role_name
+        string role_code
+        string user_grp_type_id
+        string par_role_id
+        string description
+        string status_id
+    }
+
+    sch_iam_tb_role ||--o{ sch_iam_tb_role : "par_role_id -> id"
+    sch_iam_tb_role ||--o{ sch_iam_tb_user_grp_type : "user_grp_type_id -> id"
+    sch_rbac_tb_org_role {
+        string id
+        string org_id
+        string role_id
+        string status_id
+    }
+
+    sch_rbac_tb_org_role ||--o{ sch_iam_tb_role : "role_id -> id"
+    sch_rbac_tb_user_role {
+        string id
+        string user_org_id
+        string org_role_id
+        string assigned_by
+        string assigned_at
+        string status_id
+    }
+
+    sch_rbac_tb_user_role ||--o{ sch_iam_tb_user : "assigned_by -> id"
+    sch_rbac_tb_user_role ||--o{ sch_rbac_tb_org_role : "org_role_id -> id"
+    sch_rbac_tb_user_role ||--o{ sch_rbac_tb_user_org : "user_org_id -> id"
+    sch_aaa_tb_institution_password_policy {
+        string id
+        string inst_id
+        string min_length
+        string require_uppercase
+        string require_number
+        string require_special
+        string expiry_days
+        string history_count
+        string max_attempts
+        string is_deleted
+        string created_at
+        string created_by
+        string updated_at
+        string updated_by
+        string deleted_at
+        string deleted_by
+    }
+
+    sch_aaa_tb_institution_session_policy {
+        string id
+        string inst_id
+        string idle_timeout_minutes
+        string max_session_duration
+        string max_concurrent_sessions
+        string enforce_device_binding
+        string ip_whitelist
+        string is_deleted
+        string created_at
+        string created_by
+        string updated_at
+        string updated_by
+        string deleted_at
+        string deleted_by
+    }
+
+    sch_aaa_tb_institution_login_policy {
+        string id
+        string inst_id
+        string enable_captcha
+        string captcha_threshold
+        string allowed_auth_methods
+        string enable_ip_restriction
+        string blocked_ips
+        string enable_geo_restriction
+        string allowed_countries
+        string is_deleted
+        string created_at
+        string created_by
+        string updated_at
+        string updated_by
+        string deleted_at
+        string deleted_by
+    }
+
+    sch_iam_tb_user_password_state {
+        string id
+        string user_id
+        string password_hash
+        string requires_reset
+        string lockout_until
+        string failed_attempts
+        string row_version
+        string is_deleted
+        string created_at
+        string created_by
+        string updated_at
+        string updated_by
+        string deleted_at
+        string deleted_by
+    }
+
+    sch_iam_tb_user_password_state ||--o{ sch_iam_tb_user : "user_id -> id"
+    sch_aaa_tb_mfa_backup_code {
+        string id
+        string mfa_method_id
+        string code_hash
+        string is_used
+        string used_at
+        string row_version
+        string is_deleted
+        string created_at
+        string created_by
+        string updated_at
+        string updated_by
+        string deleted_at
+        string deleted_by
+    }
+
+    sch_aaa_tb_mfa_backup_code ||--o{ sch_aaa_tb_mfa_method : "mfa_method_id -> id"
+    sch_aaa_tb_account_lock {
+        string id
+        string user_id
+        string lock_reason_id
+        string locked_at
+        string locked_until
+        string unlocked_at
+        string unlock_reason_id
+    }
+
+    sch_aaa_tb_account_lock ||--o{ sch_iam_tb_user : "user_id -> id"
+    sch_aaa_tb_mfa_method {
+        string id
+        string user_id
+        string mfa_type_id
+        string secret_key
+        string phone
+        string email
+        string is_primary
+        string is_verified
+        string is_active
+        string created_at
+        string updated_at
+    }
+
+    sch_aaa_tb_mfa_method ||--o{ sch_iam_tb_user : "user_id -> id"
+    sch_iam_tb_user {
+        string id
+        string email
+        string mobile
+        string is_email_verified
+        string is_mobile_verified
+        string password_salt
+        string password_hash
+        string status_id
+    }
+
+    sch_iam_tb_user_doc {
+        string id
+        string user_id
+        string doc_id
+        string status_id
+    }
+
+    sch_iam_tb_user_doc ||--o{ sch_iam_tb_user : "user_id -> id"
+    sch_aaa_tb_mfa_challenge {
+        string id
+        string user_id
+        string session_id
+        string mfa_method_id
+        string challenge_token
+        string otp_code
+        string issued_at
+        string expires_at
+        string verified_at
+        string status_id
+    }
+
+    sch_aaa_tb_mfa_challenge ||--o{ sch_aaa_tb_mfa_method : "mfa_method_id -> id"
+    sch_aaa_tb_mfa_challenge ||--o{ sch_iam_tb_user_session : "session_id -> id"
+    sch_aaa_tb_mfa_challenge ||--o{ sch_iam_tb_user : "user_id -> id"
+    sch_rbac_tb_permission {
+        string id
+        string permission_name
+        string permission_code
+        string module_id
+        string description
+        string status_id
+    }
+
+    sch_rbac_tb_role_permission {
+        string id
+        string role_id
+        string permission_id
+        string created_at
+    }
+
+    sch_rbac_tb_role_permission ||--o{ sch_rbac_tb_permission : "permission_id -> id"
+    sch_rbac_tb_role_permission ||--o{ sch_iam_tb_role : "role_id -> id"

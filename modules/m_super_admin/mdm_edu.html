@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>College Directory</title>
+  <style>
+    :root {
+      --bg: #f4efe6;
+      --panel: rgba(255, 251, 245, 0.92);
+      --panel-strong: #fffdf8;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: rgba(31, 41, 55, 0.12);
+      --accent: #0f766e;
+      --accent-strong: #115e59;
+      --warm: #c2410c;
+      --shadow: 0 20px 50px -30px rgba(31, 41, 55, 0.45);
+      --radius: 22px;
+      --mono: "Cascadia Code", Consolas, monospace;
+      --sans: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(15, 118, 110, 0.16), transparent 34%),
+        radial-gradient(circle at right center, rgba(194, 65, 12, 0.14), transparent 28%),
+        linear-gradient(145deg, #f7f1e8, #efe6d6 48%, #f8f5ef);
+    }
+
+    .shell {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 32px 20px 40px;
+    }
+
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      line-height: 0.95;
+      letter-spacing: -0.05em;
+    }
+
+    .hero p,
+    .hero .meta {
+      margin: 0;
+      color: var(--muted);
+      max-width: 760px;
+    }
+
+    .hero .meta {
+      font-family: var(--mono);
+      font-size: 0.9rem;
+      background: rgba(255, 255, 255, 0.5);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 10px 14px;
+      white-space: nowrap;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(320px, 430px) minmax(0, 1fr);
+      gap: 20px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .left,
+    .right {
+      padding: 22px;
+    }
+
+    .section-label {
+      margin: 0 0 14px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--warm);
+    }
+
+    .toolbar,
+    .searchbar,
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .searchbar {
+      margin-bottom: 16px;
+    }
+
+    input,
+    select,
+    button,
+    textarea {
+      font: inherit;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--text);
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: rgba(15, 118, 110, 0.45);
+      box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.12);
+    }
+
+    button {
+      border: 0;
+      border-radius: 14px;
+      padding: 12px 16px;
+      cursor: pointer;
+      color: white;
+      background: var(--accent);
+      transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      background: var(--accent-strong);
+    }
+
+    button.secondary {
+      color: var(--text);
+      background: #e7e2d7;
+    }
+
+    button.secondary:hover {
+      background: #ddd6c9;
+    }
+
+    button.ghost {
+      color: var(--warm);
+      background: #fff1e8;
+    }
+
+    .searchbar input {
+      flex: 1 1 220px;
+    }
+
+    .list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 12px;
+      max-height: 72vh;
+      overflow-y: auto;
+    }
+
+    .card {
+      border: 1px solid transparent;
+      border-radius: 18px;
+      padding: 16px;
+      background: var(--panel-strong);
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-1px);
+      border-color: rgba(15, 118, 110, 0.28);
+      box-shadow: 0 14px 30px -26px rgba(15, 118, 110, 0.45);
+    }
+
+    .card.active {
+      border-color: rgba(15, 118, 110, 0.48);
+      background: linear-gradient(135deg, rgba(15, 118, 110, 0.08), rgba(255, 255, 255, 0.96));
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .stats {
+      margin: 14px 0 18px;
+    }
+
+    .pill {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(15, 118, 110, 0.08);
+      color: var(--accent-strong);
+      font-size: 0.85rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field.wide {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .status,
+    .response {
+      margin-top: 18px;
+      border-radius: 18px;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .status.error {
+      border-color: rgba(194, 65, 12, 0.28);
+      color: #9a3412;
+      background: #fff3eb;
+    }
+
+    .status.ok {
+      border-color: rgba(15, 118, 110, 0.24);
+      color: var(--accent-strong);
+      background: #f0fdfa;
+    }
+
+    .response pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 0.85rem;
+      font-family: var(--mono);
+    }
+
+    .empty {
+      padding: 28px 18px;
+      text-align: center;
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.58);
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .list {
+        max-height: none;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .shell {
+        padding-inline: 14px;
+      }
+
+      .hero {
+        flex-direction: column;
+        align-items: start;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <p class="section-label">Super Admin / MDM Education</p>
+        <h1>College Directory Console</h1>
+        <p>Search colleges, review records, and create or update entries in the `colleges` table through the existing FastAPI endpoint.</p>
+      </div>
+      <div class="meta">GET / for UI • POST / for API</div>
+    </section>
+
+    <section class="layout">
+      <aside class="panel left">
+        <p class="section-label">Records</p>
+        <div class="searchbar">
+          <input id="searchInput" type="text" placeholder="Search by college name" />
+          <button id="searchButton" type="button">Search</button>
+          <button id="resetButton" class="secondary" type="button">Reset</button>
+        </div>
+        <div class="stats">
+          <div class="pill" id="countPill">0 colleges loaded</div>
+          <div class="pill" id="modePill">Showing all</div>
+        </div>
+        <div id="listContainer"></div>
+      </aside>
+
+      <section class="panel right">
+        <p class="section-label">Editor</p>
+        <form id="collegeForm">
+          <div class="grid">
+            <div class="field wide">
+              <label for="college_name">College Name</label>
+              <input id="college_name" name="college_name" required />
+            </div>
+            <div class="field">
+              <label for="short_form">Short Form</label>
+              <input id="short_form" name="short_form" />
+            </div>
+            <div class="field">
+              <label for="year_founded">Year Founded</label>
+              <input id="year_founded" name="year_founded" type="number" min="1800" max="9999" />
+            </div>
+            <div class="field wide">
+              <label for="website">Website</label>
+              <input id="website" name="website" type="url" placeholder="https://example.edu" />
+            </div>
+            <div class="field">
+              <label for="university_type">University Type</label>
+              <input id="university_type" name="university_type" placeholder="Private / Public" />
+            </div>
+            <div class="field">
+              <label for="type_of_college">Type Of College</label>
+              <input id="type_of_college" name="type_of_college" placeholder="Engineering / Medical" />
+            </div>
+            <div class="field">
+              <label for="college_tier">College Tier</label>
+              <input id="college_tier" name="college_tier" placeholder="Tier 1" />
+            </div>
+            <div class="field">
+              <label for="record_id">Selected Record ID</label>
+              <input id="record_id" name="record_id" readonly />
+            </div>
+          </div>
+          <div class="actions">
+            <button id="createButton" type="submit">Create College</button>
+            <button id="updateButton" class="secondary" type="button">Update Selected</button>
+            <button id="newButton" class="ghost" type="button">New Blank Form</button>
+          </div>
+        </form>
+
+        <div id="statusBox" class="status">Ready.</div>
+        <div class="response">
+          <pre id="responseBox">No request sent yet.</pre>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const API_URL = "/";
+    const requestBase = {
+      mod: "super_admin",
+      subMod: "mdm_edu",
+      actionType: null
+    };
+
+    let colleges = [];
+    let activeCollegeId = null;
+
+    const form = document.getElementById("collegeForm");
+    const listContainer = document.getElementById("listContainer");
+    const statusBox = document.getElementById("statusBox");
+    const responseBox = document.getElementById("responseBox");
+    const countPill = document.getElementById("countPill");
+    const modePill = document.getElementById("modePill");
+    const searchInput = document.getElementById("searchInput");
+
+    function setStatus(message, kind = "") {
+      statusBox.textContent = message;
+      statusBox.className = "status" + (kind ? ` ${kind}` : "");
+    }
+
+    function setResponse(data) {
+      responseBox.textContent = JSON.stringify(data, null, 2);
+    }
+
+    function buildPayload() {
+      const payload = {
+        college_name: form.college_name.value.trim(),
+        short_form: form.short_form.value.trim(),
+        website: form.website.value.trim(),
+        year_founded: form.year_founded.value ? Number(form.year_founded.value) : null,
+        university_type: form.university_type.value.trim(),
+        type_of_college: form.type_of_college.value.trim(),
+        college_tier: form.college_tier.value.trim()
+      };
+
+      if (activeCollegeId !== null) {
+        payload.id = activeCollegeId;
+      }
+
+      return payload;
+    }
+
+    async function sendRequest(action, payload = {}) {
+      const body = { ...requestBase, action, payload };
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const data = await response.json();
+      setResponse(data);
+
+      if (data.status !== "success") {
+        throw new Error(data.message || "Request failed");
+      }
+
+      return data.data;
+    }
+
+    function renderList(items) {
+      countPill.textContent = `${items.length} college${items.length === 1 ? "" : "s"} loaded`;
+
+      if (!items.length) {
+        listContainer.innerHTML = '<div class="empty">No colleges matched this request.</div>';
+        return;
+      }
+
+      const list = document.createElement("ul");
+      list.className = "list";
+
+      items.forEach((college) => {
+        const item = document.createElement("li");
+        item.className = "card" + (college.id === activeCollegeId ? " active" : "");
+        item.innerHTML = `
+          <h3>${escapeHtml(college.college_name || "Untitled college")}</h3>
+          <p>${escapeHtml(college.short_form || "No short form")} • ${escapeHtml(college.type_of_college || "Type pending")}</p>
+          <p>${escapeHtml(college.university_type || "University type pending")} • ${escapeHtml(college.college_tier || "Tier pending")}</p>
+        `;
+        item.addEventListener("click", () => selectCollege(college));
+        list.appendChild(item);
+      });
+
+      listContainer.innerHTML = "";
+      listContainer.appendChild(list);
+    }
+
+    function selectCollege(college) {
+      activeCollegeId = college.id;
+      form.record_id.value = college.id ?? "";
+      form.college_name.value = college.college_name ?? "";
+      form.short_form.value = college.short_form ?? "";
+      form.website.value = college.website ?? "";
+      form.year_founded.value = college.year_founded ?? "";
+      form.university_type.value = college.university_type ?? "";
+      form.type_of_college.value = college.type_of_college ?? "";
+      form.college_tier.value = college.college_tier ?? "";
+      renderList(colleges);
+      setStatus(`Selected college #${college.id} for editing.`, "ok");
+    }
+
+    function clearForm() {
+      activeCollegeId = null;
+      form.reset();
+      form.record_id.value = "";
+      renderList(colleges);
+      setStatus("Blank form ready for a new college record.");
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    async function loadAll() {
+      try {
+        const result = await sendRequest("read");
+        colleges = result.data || [];
+        modePill.textContent = "Showing all";
+        renderList(colleges);
+        setStatus("Loaded all colleges.", "ok");
+      } catch (error) {
+        setStatus(error.message, "error");
+      }
+    }
+
+    async function runSearch() {
+      const search = searchInput.value.trim();
+
+      if (!search) {
+        loadAll();
+        return;
+      }
+
+      try {
+        const result = await sendRequest("search", { search });
+        colleges = result.data || [];
+        modePill.textContent = `Search: ${search}`;
+        renderList(colleges);
+        setStatus(`Search completed for "${search}".`, "ok");
+      } catch (error) {
+        setStatus(error.message, "error");
+      }
+    }
+
+    async function createCollege(event) {
+      event.preventDefault();
+
+      try {
+        const result = await sendRequest("create", buildPayload());
+        setStatus(result.message || "College created successfully.", "ok");
+        await loadAll();
+        clearForm();
+      } catch (error) {
+        setStatus(error.message, "error");
+      }
+    }
+
+    async function updateCollege() {
+      if (activeCollegeId === null) {
+        setStatus("Select a college before updating.", "error");
+        return;
+      }
+
+      try {
+        const result = await sendRequest("update", buildPayload());
+        setStatus(result.message || "College updated successfully.", "ok");
+        await loadAll();
+      } catch (error) {
+        setStatus(error.message, "error");
+      }
+    }
+
+    document.getElementById("searchButton").addEventListener("click", runSearch);
+    document.getElementById("resetButton").addEventListener("click", () => {
+      searchInput.value = "";
+      loadAll();
+    });
+    document.getElementById("newButton").addEventListener("click", clearForm);
+    document.getElementById("updateButton").addEventListener("click", updateCollege);
+    searchInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        runSearch();
+      }
+    });
+    form.addEventListener("submit", createCollege);
+
+    loadAll();
+  </script>
+</body>
+</html>

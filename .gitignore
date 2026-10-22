@@ -1,0 +1,80 @@
+.DS_Store
+
+# Project-specific
+.agents/
+Resources/
+archive/
+web_demo/
+tools/
+tests/
+logs/
+scratch/
+local_docs/
+temp/
+
+# Configuration
+xsc_conf/xsc_conf_pgrs.json
+xsc_conf/oa_config.py
+xsc_conf/oa_constants.py
+xsc_conf/oa_development.py
+xsc_conf/oa_logging.py
+xsc_conf/oa_production.py
+xsc_conf/oa_qa.py
+
+# Python
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.toast
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environments
+.env
+.env.local
+.env.*.local
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Tooling and Local Configs
+.claude/
+.repowise/
+.mcp.json
+
+# Scripts
+scripts/
+
+# Logs
+logs/*.log
+
+# Gap Analysis
+GapAnalysis/
+
+
+
+bandit_report.txt
+flake8_report.txt
+temp_fix.py
+
+
+GAR/
+
+database/
+# Secrets
+.env
+xsc_conf/*credentials*.json
+firebase_credentials.json
+xsc_conf/xsc_conf_pgrs.json

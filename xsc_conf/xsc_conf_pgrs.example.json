@@ -1,0 +1,7 @@
+{
+  "host": "127.0.0.1",
+  "port": 5432,
+  "database": "educore_dev",
+  "user": "postgres",
+  "password": "change_me"
+}

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Student Module</title>
+</head>
+<body>
+
+  <h2>Send Request</h2>
+
+  <label>mod</label><br/>
+  <input id="mod" type="text" value="student" /><br/><br/>
+
+  <label>subMod</label><br/>
+  <input id="subMod" type="text" value="attendance" /><br/><br/>
+
+  <label>action</label><br/>
+  <input id="action" type="text" value="fetch" /><br/><br/>
+
+  <label>actionType</label><br/>
+  <input id="actionType" type="text" value="" /><br/><br/>
+
+  <label>payload (opp)</label><br/>
+  <input id="opp" type="text" value="get_attendance" /><br/><br/>
+
+  <button onclick="sendRequest()">Send Request</button>
+
+  <br/><br/>
+  <label>Response:</label><br/>
+  <pre id="response"></pre>
+
+  <script>
+    async function sendRequest() {
+      const payload = {
+        mod: document.getElementById("mod").value,
+        subMod: document.getElementById("subMod").value,
+        action: document.getElementById("action").value,
+        actionType: document.getElementById("actionType").value,
+        payload: {
+          opp: document.getElementById("opp").value
+        }
+      };
+
+      try {
+        const res = await fetch("http://127.0.0.1:8000/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        document.getElementById("response").textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        document.getElementById("response").textContent = "Error: " + err.message;
+      }
+    }
+  </script>
+
+</body>
+</html>
